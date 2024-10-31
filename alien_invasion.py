@@ -17,15 +17,21 @@ class AlienInvasion:
 
     def run_game(self):
         """Запуск основного цикла игры."""
-        while True: # Отслеживание событий клавиатуры и мыши.
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    sys.exit()
-            # При каждом проходе цикла перерисовывается экран.
-            self.screen.fill(self.settings.bg_color)
-            self.ship.blitme()
-            # Отображение последнего прорисованного экрана.
-            pygame.display.flip()
+        while True:
+            self._check_events()
+            self._update_screen()
+
+    def _check_events(self):
+        """Отслеживание событий клавиатуры и мыши."""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+
+    def _update_screen(self):
+        """Обновляет изображение на экране и изменяет его цвет."""
+        self.screen.fill(self.settings.bg_color)
+        self.ship.blitme()
+        pygame.display.flip()
 
 if __name__ == "__main__":
     ai = AlienInvasion()
