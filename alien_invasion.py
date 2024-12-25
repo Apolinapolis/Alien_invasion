@@ -4,6 +4,8 @@ from settings import Settings
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
+from time import sleep
+from game_stats import GameStats
 
 class AlienInvasion:
     """Класс для управления ресурсами и поведением игры."""
@@ -15,10 +17,23 @@ class AlienInvasion:
         self.settings.screen_width = self.screen.get_rect().width
         self.settings.screen_height = self.screen.get_rect().height
         pygame.display.set_caption("Alien Invasion")
+
+        #Создание экземпляра статистики
+        self.stats = GameStats(self)
+
         self.ship = Ship(self) # don't work without this.
         self.bullets = pygame.sprite.Group()
         self.aliens = pygame.sprite.Group()
         self._create_fleet()
+
+    def _ship_hit(self):
+        """Обрабатывает столкновение корабля с вражеской силой."""
+        self.stats.ships_left -= 1
+        self.aliens.empty()
+        self.bullets.empty()
+        self._create_fleet()
+        self.ship.center_ship()
+        sleep(2)
 
     def _create_fleet(self):
         """Создает флот aliens."""
@@ -59,8 +74,7 @@ class AlienInvasion:
         for alien in self.aliens.sprites():
             alien.rect.y += self.settings.fleet_drop_speed
         self.settings.fleet_direction *= -1
-
-                
+             
     def run_game(self):
         """Запуск основного цикла игры."""
         while True:
@@ -113,6 +127,15 @@ class AlienInvasion:
         for bullet in self.bullets.copy():
             if bullet.rect.bottom <= 0:
                 self.bullets.remove(bullet)
+        self._check_bullet_alien_collisions()
+
+    def _check_bullet_alien_collisions(self):
+        """Проверка столкновений пуль с пришельцами."""
+        collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+        if not self.aliens:
+            # Уничтожение существующих снарядов и создание нового флота.
+            self.bullets.empty()
+            self._create_fleet()
 
     def _update_screen(self):
         """Обновляет изображение на экране и изменяет его цвет."""
@@ -126,6 +149,10 @@ class AlienInvasion:
     def _update_aliens(self):
         self._check_fleet_edges()
         self.aliens.update()
+
+        #Проверка коллизий (корабль - пришелец)
+        if pygame.sprite.spritecollideany(self.ship, self.aliens):
+            self._ship_hit()
 
 if __name__ == "__main__":
     ai = AlienInvasion()
