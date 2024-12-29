@@ -6,7 +6,7 @@ from bullet import Bullet
 from alien import Alien
 from time import sleep
 from game_stats import GameStats
-from button import Button
+from button import Button, BtnEasy, BtnHard
 
 class AlienInvasion:
     """Класс для управления ресурсами и поведением игры."""
@@ -29,6 +29,8 @@ class AlienInvasion:
 
         #Кнопка play
         self.play_button = Button(self, "Play")
+        self.play_easy = BtnEasy(self, "Easy mode")
+        self.play_hard = BtnHard(self, "Hard mode")
 
     def _ship_hit(self):
         """Обрабатывает столкновение корабля с вражеской силой."""
@@ -109,16 +111,32 @@ class AlienInvasion:
 
     def _check_play_button(self, mouse_pos):
         """Запускает игру при нажатии Play"""
-        button_clicked = self.play_button.rect.collidepoint(mouse_pos)
-        if button_clicked and not self.stats.game_active:
-            self.stats.reset_stats()
-            self.stats.game_active = True
-        
+        button_clicked = self.play_button.rect.collidepoint(mouse_pos) 
+        button_easy_clicked = self.play_easy.rect.collidepoint(mouse_pos)
+        button_hard_clicked = self.play_hard.rect.collidepoint(mouse_pos)
+
+        def other_settings():
             self.aliens.empty()
             self.bullets.empty()
             self.ship.center_ship()
             self._create_fleet()
             pygame.mouse.set_visible(False)
+
+        if button_clicked and not self.stats.game_active:
+            self.settings.initialize_dynamic_settings()
+            self.stats.reset_stats()
+            self.stats.game_active = True
+            other_settings()
+        elif button_easy_clicked and not self.stats.game_active:
+            self.settings.initialize_easy_dynamic_settings()
+            self.stats.reset_stats()
+            self.stats.game_active = True
+            other_settings()
+        elif button_hard_clicked and not self.stats.game_active:
+            self.settings.initialize_hard_dynamic_settings()
+            self.stats.reset_stats()
+            self.stats.game_active = True
+            other_settings()
 
     def _check_keydown_events(self, event):
         """Отслеживание нажатия клавиш."""
@@ -171,6 +189,7 @@ class AlienInvasion:
             # Уничтожение существующих снарядов и создание нового флота.
             self.bullets.empty()
             self._create_fleet()
+            self.settings.increase_speed()
 
     def _update_screen(self):
         """Обновляет изображение на экране и изменяет его цвет."""
@@ -182,6 +201,8 @@ class AlienInvasion:
         # Кнопка play отображается в не активном режиме
         if not self.stats.game_active:
             self.play_button.draw_button()
+            self.play_easy.draw_button()
+            self.play_hard.draw_button()
 
         pygame.display.flip()
 
