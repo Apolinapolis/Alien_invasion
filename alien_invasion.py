@@ -7,6 +7,7 @@ from alien import Alien
 from time import sleep
 from game_stats import GameStats
 from button import Button, BtnEasy, BtnHard
+from scoreboard import Scoreboard
 
 class AlienInvasion:
     """Класс для управления ресурсами и поведением игры."""
@@ -21,6 +22,7 @@ class AlienInvasion:
 
         #Создание экземпляра статистики
         self.stats = GameStats(self)
+        self.sb = Scoreboard(self)
 
         self.ship = Ship(self) # don't work without this.
         self.bullets = pygame.sprite.Group()
@@ -36,6 +38,7 @@ class AlienInvasion:
         """Обрабатывает столкновение корабля с вражеской силой."""
         if self.stats.ships_left > 0:
             self.stats.ships_left -= 1
+            self.sb.prep_ships()
             self.aliens.empty()
             self.bullets.empty()
             self._create_fleet()
@@ -126,6 +129,9 @@ class AlienInvasion:
             self.settings.initialize_dynamic_settings()
             self.stats.reset_stats()
             self.stats.game_active = True
+            self.sb.prep_score() # 302 - 306 Дублировать логику для easy / hard
+            self.sb.prep_level()
+            self.sb.prep_ships()
             other_settings()
         elif button_easy_clicked and not self.stats.game_active:
             self.settings.initialize_easy_dynamic_settings()
@@ -185,11 +191,21 @@ class AlienInvasion:
     def _check_bullet_alien_collisions(self):
         """Проверка столкновений пуль с пришельцами."""
         collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+
+        if collisions:
+            for aliens in collisions.values():
+                self.stats.score += self.settings.alien_points * len(aliens)
+            self.sb.prep_score()
+            self.sb.check_high_score()
+
         if not self.aliens:
             # Уничтожение существующих снарядов и создание нового флота.
             self.bullets.empty()
             self._create_fleet()
             self.settings.increase_speed()
+            #Увеличнение уровня
+            self.stats.level += 1
+            self.sb.prep_level()
 
     def _update_screen(self):
         """Обновляет изображение на экране и изменяет его цвет."""
@@ -198,6 +214,7 @@ class AlienInvasion:
         for bullet in self.bullets.sprites():
             bullet.draw_bullet()
         self.aliens.draw(self.screen)
+        self.sb.show_score()
         # Кнопка play отображается в не активном режиме
         if not self.stats.game_active:
             self.play_button.draw_button()
